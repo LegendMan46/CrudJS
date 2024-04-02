@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Öğrenci Veritabanı İşlemleri</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/logout"><img src="logout.png" width="50" height="50"></a>
+        <h1>Öğrenci Veritabanı İşlemleri</h1>
+        <div class="section">
+            <h2>Öğrenci Arama</h2>
+            <input type="number" id="searchQuery" placeholder="Okul No">
+            <button onclick="listele()" class="btn">Ara</button>
+        </div>
+
+        <div class="section">
+            <h2>Sıralama</h2>
+            <select id="sortOrder">
+                <option value="">Sıralama Yok</option>
+                <option value="name">İsim</option>
+                <option value="age">Yaş</option>
+                <option value="number">Okul No</option>
+            </select>
+            <br>
+            <br>
+            <button onclick="listele()" class="btn">Sırala</button>
+        </div>
+
+        <div id="list">
+            <table id="studentsTable">
+                <thead>
+                    <tr>
+                        <th>Okul No</th>
+                        <th>İsim</th>
+                        <th>Yaş</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                </tbody>
+            </table>
+        </div>
+
+
+        <div class="section">
+            <h2>Öğrenci Ekle</h2>
+            <form id="addStudentForm">
+                <input type="number" name="number" placeholder="Okul No" required>
+                <input type="text" name="name" placeholder="Öğrenci Adı" required>
+                <input type="number" name="age" placeholder="Yaş" required>
+                <button type="submit" class="btn">Ekle</button>
+            </form>
+        </div>
+
+
+        <div class="section">
+            <h2>Öğrenci Güncelle</h2>
+            <form id="updateStudentForm">
+                <input type="number" name="number" placeholder="Okul No" required>
+                <input type="text" name="name" placeholder="Yeni Öğrenci Adı">
+                <input type="number" name="age" placeholder="Yeni Yaş">
+                <button type="submit" class="btn">Güncelle</button>
+            </form>
+        </div>
+        
+
+
+        <div class="section">
+            <h2>Öğrenci Sil</h2>
+            <form id="deleteStudentForm">
+                <input type="number" name="number" placeholder="Okul No" required>
+                <button type="submit" class="btn">Sil</button>
+            </form>
+        </div>
+        
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function listele() {
+            const searchQuery = document.getElementById('searchQuery').value;
+            const sortOrder = document.getElementById('sortOrder').value;
+            let url = '/list';
+            const params = [];
+            
+            if (searchQuery) {
+                params.push(`search=${searchQuery}`);
+            }
+            
+            if (sortOrder) {
+                params.push(`sort=${sortOrder}`);
+            }
+            
+            if (params.length) {
+                url += `?${params.join('&')}`;
+            }
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector('#studentsTable tbody');
+                    tbody.innerHTML = ''; // Tabloyu temizle
+                    data.forEach(student => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${student.number}</td><td>${student.name}</td><td>${student.age}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+
+        document.getElementById('addStudentForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Formun varsayılan gönderimini engelle
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            fetch('/insert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    Swal.fire({
+                        title: "İşlem Başarılı",
+                        text: data.message,
+                        icon: "success"
+                    });
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "İşlem Başarısız",
+                        text: data.message,
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+        document.getElementById('updateStudentForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Formun varsayılan gönderimini engelle
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            fetch('/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    Swal.fire({
+                        title: "İşlem Başarılı",
+                        text: data.message,
+                        icon: "success"
+                    });
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "İşlem Başarısız",
+                        text: data.message,
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+        document.getElementById('deleteStudentForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Formun varsayılan gönderimini engelle
+
+            const formData = new FormData(this);
+            const number = formData.get('number');
+
+            fetch(`/delete/${number}`, {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    Swal.fire({
+                        title: "İşlem Başarılı",
+                        text: data.message,
+                        icon: "success"
+                    });
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "İşlem Başarısız",
+                        text: data.message,
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+
+    </script>
+</body>
+</html>
